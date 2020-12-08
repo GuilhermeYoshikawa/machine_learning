@@ -1,0 +1,1444 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "name": "Grupo3_Entrega_02_e_03_Projeto.ipynb",
+      "provenance": [],
+      "collapsed_sections": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "YGP4qZff1soi"
+      },
+      "source": [
+        "Neste caso utilizaremos a Decision Tree Classification — para prever os dados de acordo com a faixa etaria de idade."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "eYQZN-LX4TqF"
+      },
+      "source": [
+        "# Instalando as bibliotecas necessárias\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "from sklearn import tree # A árvore de decisão vem da bibliteca sklearn\n",
+        "import graphviz # utilizado para a criação do modelo visual da árvore \n",
+        "from sklearn.model_selection import cross_val_score"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "K5YjiVBG4N9L",
+        "colab": {
+          "resources": {
+            "http://localhost:8080/nbextensions/google.colab/files.js": {
+              "data": "Ly8gQ29weXJpZ2h0IDIwMTcgR29vZ2xlIExMQwovLwovLyBMaWNlbnNlZCB1bmRlciB0aGUgQXBhY2hlIExpY2Vuc2UsIFZlcnNpb24gMi4wICh0aGUgIkxpY2Vuc2UiKTsKLy8geW91IG1heSBub3QgdXNlIHRoaXMgZmlsZSBleGNlcHQgaW4gY29tcGxpYW5jZSB3aXRoIHRoZSBMaWNlbnNlLgovLyBZb3UgbWF5IG9idGFpbiBhIGNvcHkgb2YgdGhlIExpY2Vuc2UgYXQKLy8KLy8gICAgICBodHRwOi8vd3d3LmFwYWNoZS5vcmcvbGljZW5zZXMvTElDRU5TRS0yLjAKLy8KLy8gVW5sZXNzIHJlcXVpcmVkIGJ5IGFwcGxpY2FibGUgbGF3IG9yIGFncmVlZCB0byBpbiB3cml0aW5nLCBzb2Z0d2FyZQovLyBkaXN0cmlidXRlZCB1bmRlciB0aGUgTGljZW5zZSBpcyBkaXN0cmlidXRlZCBvbiBhbiAiQVMgSVMiIEJBU0lTLAovLyBXSVRIT1VUIFdBUlJBTlRJRVMgT1IgQ09ORElUSU9OUyBPRiBBTlkgS0lORCwgZWl0aGVyIGV4cHJlc3Mgb3IgaW1wbGllZC4KLy8gU2VlIHRoZSBMaWNlbnNlIGZvciB0aGUgc3BlY2lmaWMgbGFuZ3VhZ2UgZ292ZXJuaW5nIHBlcm1pc3Npb25zIGFuZAovLyBsaW1pdGF0aW9ucyB1bmRlciB0aGUgTGljZW5zZS4KCi8qKgogKiBAZmlsZW92ZXJ2aWV3IEhlbHBlcnMgZm9yIGdvb2dsZS5jb2xhYiBQeXRob24gbW9kdWxlLgogKi8KKGZ1bmN0aW9uKHNjb3BlKSB7CmZ1bmN0aW9uIHNwYW4odGV4dCwgc3R5bGVBdHRyaWJ1dGVzID0ge30pIHsKICBjb25zdCBlbGVtZW50ID0gZG9jdW1lbnQuY3JlYXRlRWxlbWVudCgnc3BhbicpOwogIGVsZW1lbnQudGV4dENvbnRlbnQgPSB0ZXh0OwogIGZvciAoY29uc3Qga2V5IG9mIE9iamVjdC5rZXlzKHN0eWxlQXR0cmlidXRlcykpIHsKICAgIGVsZW1lbnQuc3R5bGVba2V5XSA9IHN0eWxlQXR0cmlidXRlc1trZXldOwogIH0KICByZXR1cm4gZWxlbWVudDsKfQoKLy8gTWF4IG51bWJlciBvZiBieXRlcyB3aGljaCB3aWxsIGJlIHVwbG9hZGVkIGF0IGEgdGltZS4KY29uc3QgTUFYX1BBWUxPQURfU0laRSA9IDEwMCAqIDEwMjQ7CgpmdW5jdGlvbiBfdXBsb2FkRmlsZXMoaW5wdXRJZCwgb3V0cHV0SWQpIHsKICBjb25zdCBzdGVwcyA9IHVwbG9hZEZpbGVzU3RlcChpbnB1dElkLCBvdXRwdXRJZCk7CiAgY29uc3Qgb3V0cHV0RWxlbWVudCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKG91dHB1dElkKTsKICAvLyBDYWNoZSBzdGVwcyBvbiB0aGUgb3V0cHV0RWxlbWVudCB0byBtYWtlIGl0IGF2YWlsYWJsZSBmb3IgdGhlIG5leHQgY2FsbAogIC8vIHRvIHVwbG9hZEZpbGVzQ29udGludWUgZnJvbSBQeXRob24uCiAgb3V0cHV0RWxlbWVudC5zdGVwcyA9IHN0ZXBzOwoKICByZXR1cm4gX3VwbG9hZEZpbGVzQ29udGludWUob3V0cHV0SWQpOwp9CgovLyBUaGlzIGlzIHJvdWdobHkgYW4gYXN5bmMgZ2VuZXJhdG9yIChub3Qgc3VwcG9ydGVkIGluIHRoZSBicm93c2VyIHlldCksCi8vIHdoZXJlIHRoZXJlIGFyZSBtdWx0aXBsZSBhc3luY2hyb25vdXMgc3RlcHMgYW5kIHRoZSBQeXRob24gc2lkZSBpcyBnb2luZwovLyB0byBwb2xsIGZvciBjb21wbGV0aW9uIG9mIGVhY2ggc3RlcC4KLy8gVGhpcyB1c2VzIGEgUHJvbWlzZSB0byBibG9jayB0aGUgcHl0aG9uIHNpZGUgb24gY29tcGxldGlvbiBvZiBlYWNoIHN0ZXAsCi8vIHRoZW4gcGFzc2VzIHRoZSByZXN1bHQgb2YgdGhlIHByZXZpb3VzIHN0ZXAgYXMgdGhlIGlucHV0IHRvIHRoZSBuZXh0IHN0ZXAuCmZ1bmN0aW9uIF91cGxvYWRGaWxlc0NvbnRpbnVlKG91dHB1dElkKSB7CiAgY29uc3Qgb3V0cHV0RWxlbWVudCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKG91dHB1dElkKTsKICBjb25zdCBzdGVwcyA9IG91dHB1dEVsZW1lbnQuc3RlcHM7CgogIGNvbnN0IG5leHQgPSBzdGVwcy5uZXh0KG91dHB1dEVsZW1lbnQubGFzdFByb21pc2VWYWx1ZSk7CiAgcmV0dXJuIFByb21pc2UucmVzb2x2ZShuZXh0LnZhbHVlLnByb21pc2UpLnRoZW4oKHZhbHVlKSA9PiB7CiAgICAvLyBDYWNoZSB0aGUgbGFzdCBwcm9taXNlIHZhbHVlIHRvIG1ha2UgaXQgYXZhaWxhYmxlIHRvIHRoZSBuZXh0CiAgICAvLyBzdGVwIG9mIHRoZSBnZW5lcmF0b3IuCiAgICBvdXRwdXRFbGVtZW50Lmxhc3RQcm9taXNlVmFsdWUgPSB2YWx1ZTsKICAgIHJldHVybiBuZXh0LnZhbHVlLnJlc3BvbnNlOwogIH0pOwp9CgovKioKICogR2VuZXJhdG9yIGZ1bmN0aW9uIHdoaWNoIGlzIGNhbGxlZCBiZXR3ZWVuIGVhY2ggYXN5bmMgc3RlcCBvZiB0aGUgdXBsb2FkCiAqIHByb2Nlc3MuCiAqIEBwYXJhbSB7c3RyaW5nfSBpbnB1dElkIEVsZW1lbnQgSUQgb2YgdGhlIGlucHV0IGZpbGUgcGlja2VyIGVsZW1lbnQuCiAqIEBwYXJhbSB7c3RyaW5nfSBvdXRwdXRJZCBFbGVtZW50IElEIG9mIHRoZSBvdXRwdXQgZGlzcGxheS4KICogQHJldHVybiB7IUl0ZXJhYmxlPCFPYmplY3Q+fSBJdGVyYWJsZSBvZiBuZXh0IHN0ZXBzLgogKi8KZnVuY3Rpb24qIHVwbG9hZEZpbGVzU3RlcChpbnB1dElkLCBvdXRwdXRJZCkgewogIGNvbnN0IGlucHV0RWxlbWVudCA9IGRvY3VtZW50LmdldEVsZW1lbnRCeUlkKGlucHV0SWQpOwogIGlucHV0RWxlbWVudC5kaXNhYmxlZCA9IGZhbHNlOwoKICBjb25zdCBvdXRwdXRFbGVtZW50ID0gZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQob3V0cHV0SWQpOwogIG91dHB1dEVsZW1lbnQuaW5uZXJIVE1MID0gJyc7CgogIGNvbnN0IHBpY2tlZFByb21pc2UgPSBuZXcgUHJvbWlzZSgocmVzb2x2ZSkgPT4gewogICAgaW5wdXRFbGVtZW50LmFkZEV2ZW50TGlzdGVuZXIoJ2NoYW5nZScsIChlKSA9PiB7CiAgICAgIHJlc29sdmUoZS50YXJnZXQuZmlsZXMpOwogICAgfSk7CiAgfSk7CgogIGNvbnN0IGNhbmNlbCA9IGRvY3VtZW50LmNyZWF0ZUVsZW1lbnQoJ2J1dHRvbicpOwogIGlucHV0RWxlbWVudC5wYXJlbnRFbGVtZW50LmFwcGVuZENoaWxkKGNhbmNlbCk7CiAgY2FuY2VsLnRleHRDb250ZW50ID0gJ0NhbmNlbCB1cGxvYWQnOwogIGNvbnN0IGNhbmNlbFByb21pc2UgPSBuZXcgUHJvbWlzZSgocmVzb2x2ZSkgPT4gewogICAgY2FuY2VsLm9uY2xpY2sgPSAoKSA9PiB7CiAgICAgIHJlc29sdmUobnVsbCk7CiAgICB9OwogIH0pOwoKICAvLyBXYWl0IGZvciB0aGUgdXNlciB0byBwaWNrIHRoZSBmaWxlcy4KICBjb25zdCBmaWxlcyA9IHlpZWxkIHsKICAgIHByb21pc2U6IFByb21pc2UucmFjZShbcGlja2VkUHJvbWlzZSwgY2FuY2VsUHJvbWlzZV0pLAogICAgcmVzcG9uc2U6IHsKICAgICAgYWN0aW9uOiAnc3RhcnRpbmcnLAogICAgfQogIH07CgogIGNhbmNlbC5yZW1vdmUoKTsKCiAgLy8gRGlzYWJsZSB0aGUgaW5wdXQgZWxlbWVudCBzaW5jZSBmdXJ0aGVyIHBpY2tzIGFyZSBub3QgYWxsb3dlZC4KICBpbnB1dEVsZW1lbnQuZGlzYWJsZWQgPSB0cnVlOwoKICBpZiAoIWZpbGVzKSB7CiAgICByZXR1cm4gewogICAgICByZXNwb25zZTogewogICAgICAgIGFjdGlvbjogJ2NvbXBsZXRlJywKICAgICAgfQogICAgfTsKICB9CgogIGZvciAoY29uc3QgZmlsZSBvZiBmaWxlcykgewogICAgY29uc3QgbGkgPSBkb2N1bWVudC5jcmVhdGVFbGVtZW50KCdsaScpOwogICAgbGkuYXBwZW5kKHNwYW4oZmlsZS5uYW1lLCB7Zm9udFdlaWdodDogJ2JvbGQnfSkpOwogICAgbGkuYXBwZW5kKHNwYW4oCiAgICAgICAgYCgke2ZpbGUudHlwZSB8fCAnbi9hJ30pIC0gJHtmaWxlLnNpemV9IGJ5dGVzLCBgICsKICAgICAgICBgbGFzdCBtb2RpZmllZDogJHsKICAgICAgICAgICAgZmlsZS5sYXN0TW9kaWZpZWREYXRlID8gZmlsZS5sYXN0TW9kaWZpZWREYXRlLnRvTG9jYWxlRGF0ZVN0cmluZygpIDoKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJ24vYSd9IC0gYCkpOwogICAgY29uc3QgcGVyY2VudCA9IHNwYW4oJzAlIGRvbmUnKTsKICAgIGxpLmFwcGVuZENoaWxkKHBlcmNlbnQpOwoKICAgIG91dHB1dEVsZW1lbnQuYXBwZW5kQ2hpbGQobGkpOwoKICAgIGNvbnN0IGZpbGVEYXRhUHJvbWlzZSA9IG5ldyBQcm9taXNlKChyZXNvbHZlKSA9PiB7CiAgICAgIGNvbnN0IHJlYWRlciA9IG5ldyBGaWxlUmVhZGVyKCk7CiAgICAgIHJlYWRlci5vbmxvYWQgPSAoZSkgPT4gewogICAgICAgIHJlc29sdmUoZS50YXJnZXQucmVzdWx0KTsKICAgICAgfTsKICAgICAgcmVhZGVyLnJlYWRBc0FycmF5QnVmZmVyKGZpbGUpOwogICAgfSk7CiAgICAvLyBXYWl0IGZvciB0aGUgZGF0YSB0byBiZSByZWFkeS4KICAgIGxldCBmaWxlRGF0YSA9IHlpZWxkIHsKICAgICAgcHJvbWlzZTogZmlsZURhdGFQcm9taXNlLAogICAgICByZXNwb25zZTogewogICAgICAgIGFjdGlvbjogJ2NvbnRpbnVlJywKICAgICAgfQogICAgfTsKCiAgICAvLyBVc2UgYSBjaHVua2VkIHNlbmRpbmcgdG8gYXZvaWQgbWVzc2FnZSBzaXplIGxpbWl0cy4gU2VlIGIvNjIxMTU2NjAuCiAgICBsZXQgcG9zaXRpb24gPSAwOwogICAgd2hpbGUgKHBvc2l0aW9uIDwgZmlsZURhdGEuYnl0ZUxlbmd0aCkgewogICAgICBjb25zdCBsZW5ndGggPSBNYXRoLm1pbihmaWxlRGF0YS5ieXRlTGVuZ3RoIC0gcG9zaXRpb24sIE1BWF9QQVlMT0FEX1NJWkUpOwogICAgICBjb25zdCBjaHVuayA9IG5ldyBVaW50OEFycmF5KGZpbGVEYXRhLCBwb3NpdGlvbiwgbGVuZ3RoKTsKICAgICAgcG9zaXRpb24gKz0gbGVuZ3RoOwoKICAgICAgY29uc3QgYmFzZTY0ID0gYnRvYShTdHJpbmcuZnJvbUNoYXJDb2RlLmFwcGx5KG51bGwsIGNodW5rKSk7CiAgICAgIHlpZWxkIHsKICAgICAgICByZXNwb25zZTogewogICAgICAgICAgYWN0aW9uOiAnYXBwZW5kJywKICAgICAgICAgIGZpbGU6IGZpbGUubmFtZSwKICAgICAgICAgIGRhdGE6IGJhc2U2NCwKICAgICAgICB9LAogICAgICB9OwogICAgICBwZXJjZW50LnRleHRDb250ZW50ID0KICAgICAgICAgIGAke01hdGgucm91bmQoKHBvc2l0aW9uIC8gZmlsZURhdGEuYnl0ZUxlbmd0aCkgKiAxMDApfSUgZG9uZWA7CiAgICB9CiAgfQoKICAvLyBBbGwgZG9uZS4KICB5aWVsZCB7CiAgICByZXNwb25zZTogewogICAgICBhY3Rpb246ICdjb21wbGV0ZScsCiAgICB9CiAgfTsKfQoKc2NvcGUuZ29vZ2xlID0gc2NvcGUuZ29vZ2xlIHx8IHt9OwpzY29wZS5nb29nbGUuY29sYWIgPSBzY29wZS5nb29nbGUuY29sYWIgfHwge307CnNjb3BlLmdvb2dsZS5jb2xhYi5fZmlsZXMgPSB7CiAgX3VwbG9hZEZpbGVzLAogIF91cGxvYWRGaWxlc0NvbnRpbnVlLAp9Owp9KShzZWxmKTsK",
+              "ok": true,
+              "headers": [
+                [
+                  "content-type",
+                  "application/javascript"
+                ]
+              ],
+              "status": 200,
+              "status_text": ""
+            }
+          },
+          "base_uri": "https://localhost:8080/",
+          "height": 73
+        },
+        "outputId": "2f8270b7-c887-4021-ca2b-aab13dc3f4bd"
+      },
+      "source": [
+        "# Importando a base de dados do projeto \n",
+        "from google.colab import files\n",
+        "uploaded = files.upload()\n",
+        "df = pd.read_csv ('census.csv') "
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/html": [
+              "\n",
+              "     <input type=\"file\" id=\"files-d1cff470-089e-44a1-b78b-982016f8053b\" name=\"files[]\" multiple disabled\n",
+              "        style=\"border:none\" />\n",
+              "     <output id=\"result-d1cff470-089e-44a1-b78b-982016f8053b\">\n",
+              "      Upload widget is only available when the cell has been executed in the\n",
+              "      current browser session. Please rerun this cell to enable.\n",
+              "      </output>\n",
+              "      <script src=\"/nbextensions/google.colab/files.js\"></script> "
+            ],
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          }
+        },
+        {
+          "output_type": "stream",
+          "text": [
+            "Saving census.csv to census.csv\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "3nbzpt4SvZrI",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 101
+        },
+        "outputId": "3aede2a5-23f7-49fc-b3f6-b6e8a0cf1486"
+      },
+      "source": [
+        "# Exibindo as colunas\n",
+        "df.columns"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "Index(['Unnamed: 0', 'age', 'workclass', 'final.weight', 'education',\n",
+              "       'education.num', 'marital.status', 'occupation', 'relationship', 'race',\n",
+              "       'sex', 'capital.gain', 'capital.loos', 'hour.per.week',\n",
+              "       'native.country', 'income'],\n",
+              "      dtype='object')"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 120
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "fNDXjcn6p6IB",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 1000
+        },
+        "outputId": "e9098d98-7ca4-43fd-bd1e-318413a83ed3"
+      },
+      "source": [
+        "# verificando as primeiras instâncias\n",
+        "df.head(30)"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/html": [
+              "<div>\n",
+              "<style scoped>\n",
+              "    .dataframe tbody tr th:only-of-type {\n",
+              "        vertical-align: middle;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe tbody tr th {\n",
+              "        vertical-align: top;\n",
+              "    }\n",
+              "\n",
+              "    .dataframe thead th {\n",
+              "        text-align: right;\n",
+              "    }\n",
+              "</style>\n",
+              "<table border=\"1\" class=\"dataframe\">\n",
+              "  <thead>\n",
+              "    <tr style=\"text-align: right;\">\n",
+              "      <th></th>\n",
+              "      <th>Unnamed: 0</th>\n",
+              "      <th>age</th>\n",
+              "      <th>workclass</th>\n",
+              "      <th>final.weight</th>\n",
+              "      <th>education</th>\n",
+              "      <th>education.num</th>\n",
+              "      <th>marital.status</th>\n",
+              "      <th>occupation</th>\n",
+              "      <th>relationship</th>\n",
+              "      <th>race</th>\n",
+              "      <th>sex</th>\n",
+              "      <th>capital.gain</th>\n",
+              "      <th>capital.loos</th>\n",
+              "      <th>hour.per.week</th>\n",
+              "      <th>native.country</th>\n",
+              "      <th>income</th>\n",
+              "    </tr>\n",
+              "  </thead>\n",
+              "  <tbody>\n",
+              "    <tr>\n",
+              "      <th>0</th>\n",
+              "      <td>1</td>\n",
+              "      <td>39</td>\n",
+              "      <td>State-gov</td>\n",
+              "      <td>77516</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Adm-clerical</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>2174</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>1</th>\n",
+              "      <td>2</td>\n",
+              "      <td>50</td>\n",
+              "      <td>Self-emp-not-inc</td>\n",
+              "      <td>83311</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>13</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>2</th>\n",
+              "      <td>3</td>\n",
+              "      <td>38</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>215646</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Divorced</td>\n",
+              "      <td>Handlers-cleaners</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>3</th>\n",
+              "      <td>4</td>\n",
+              "      <td>53</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>234721</td>\n",
+              "      <td>11th</td>\n",
+              "      <td>7</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Handlers-cleaners</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>4</th>\n",
+              "      <td>5</td>\n",
+              "      <td>28</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>338409</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Prof-specialty</td>\n",
+              "      <td>Wife</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>Cuba</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>5</th>\n",
+              "      <td>6</td>\n",
+              "      <td>37</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>284582</td>\n",
+              "      <td>Masters</td>\n",
+              "      <td>14</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Wife</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>6</th>\n",
+              "      <td>7</td>\n",
+              "      <td>49</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>160187</td>\n",
+              "      <td>9th</td>\n",
+              "      <td>5</td>\n",
+              "      <td>Married-spouse-absent</td>\n",
+              "      <td>Other-service</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>16</td>\n",
+              "      <td>Jamaica</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>7</th>\n",
+              "      <td>8</td>\n",
+              "      <td>52</td>\n",
+              "      <td>Self-emp-not-inc</td>\n",
+              "      <td>209642</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>45</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>8</th>\n",
+              "      <td>9</td>\n",
+              "      <td>31</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>45781</td>\n",
+              "      <td>Masters</td>\n",
+              "      <td>14</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Prof-specialty</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>14084</td>\n",
+              "      <td>0</td>\n",
+              "      <td>50</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>9</th>\n",
+              "      <td>10</td>\n",
+              "      <td>42</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>159449</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>5178</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>10</th>\n",
+              "      <td>11</td>\n",
+              "      <td>37</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>280464</td>\n",
+              "      <td>Some-college</td>\n",
+              "      <td>10</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>80</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>11</th>\n",
+              "      <td>12</td>\n",
+              "      <td>30</td>\n",
+              "      <td>State-gov</td>\n",
+              "      <td>141297</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Prof-specialty</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>Asian-Pac-Islander</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>India</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>12</th>\n",
+              "      <td>13</td>\n",
+              "      <td>23</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>122272</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Adm-clerical</td>\n",
+              "      <td>Own-child</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>30</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>13</th>\n",
+              "      <td>14</td>\n",
+              "      <td>32</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>205019</td>\n",
+              "      <td>Assoc-acdm</td>\n",
+              "      <td>12</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Sales</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>50</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>14</th>\n",
+              "      <td>16</td>\n",
+              "      <td>34</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>245487</td>\n",
+              "      <td>7th-8th</td>\n",
+              "      <td>4</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Transport-moving</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>Amer-Indian-Eskimo</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>45</td>\n",
+              "      <td>Mexico</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>15</th>\n",
+              "      <td>17</td>\n",
+              "      <td>25</td>\n",
+              "      <td>Self-emp-not-inc</td>\n",
+              "      <td>176756</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Farming-fishing</td>\n",
+              "      <td>Own-child</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>35</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>16</th>\n",
+              "      <td>18</td>\n",
+              "      <td>32</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>186824</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Machine-op-inspct</td>\n",
+              "      <td>Unmarried</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>17</th>\n",
+              "      <td>19</td>\n",
+              "      <td>38</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>28887</td>\n",
+              "      <td>11th</td>\n",
+              "      <td>7</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Sales</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>50</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>18</th>\n",
+              "      <td>20</td>\n",
+              "      <td>43</td>\n",
+              "      <td>Self-emp-not-inc</td>\n",
+              "      <td>292175</td>\n",
+              "      <td>Masters</td>\n",
+              "      <td>14</td>\n",
+              "      <td>Divorced</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Unmarried</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>45</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>19</th>\n",
+              "      <td>21</td>\n",
+              "      <td>40</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>193524</td>\n",
+              "      <td>Doctorate</td>\n",
+              "      <td>16</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Prof-specialty</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>60</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>20</th>\n",
+              "      <td>22</td>\n",
+              "      <td>54</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>302146</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Separated</td>\n",
+              "      <td>Other-service</td>\n",
+              "      <td>Unmarried</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>20</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>21</th>\n",
+              "      <td>23</td>\n",
+              "      <td>35</td>\n",
+              "      <td>Federal-gov</td>\n",
+              "      <td>76845</td>\n",
+              "      <td>9th</td>\n",
+              "      <td>5</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Farming-fishing</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>22</th>\n",
+              "      <td>24</td>\n",
+              "      <td>43</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>117037</td>\n",
+              "      <td>11th</td>\n",
+              "      <td>7</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Transport-moving</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>2042</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>23</th>\n",
+              "      <td>25</td>\n",
+              "      <td>59</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>109015</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Divorced</td>\n",
+              "      <td>Tech-support</td>\n",
+              "      <td>Unmarried</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Female</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>24</th>\n",
+              "      <td>26</td>\n",
+              "      <td>56</td>\n",
+              "      <td>Local-gov</td>\n",
+              "      <td>216851</td>\n",
+              "      <td>Bachelors</td>\n",
+              "      <td>13</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Tech-support</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&gt;50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>25</th>\n",
+              "      <td>27</td>\n",
+              "      <td>19</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>168294</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Craft-repair</td>\n",
+              "      <td>Own-child</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>26</th>\n",
+              "      <td>29</td>\n",
+              "      <td>39</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>367260</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Divorced</td>\n",
+              "      <td>Exec-managerial</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>80</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>27</th>\n",
+              "      <td>30</td>\n",
+              "      <td>49</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>193366</td>\n",
+              "      <td>HS-grad</td>\n",
+              "      <td>9</td>\n",
+              "      <td>Married-civ-spouse</td>\n",
+              "      <td>Craft-repair</td>\n",
+              "      <td>Husband</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>40</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>28</th>\n",
+              "      <td>31</td>\n",
+              "      <td>23</td>\n",
+              "      <td>Local-gov</td>\n",
+              "      <td>190709</td>\n",
+              "      <td>Assoc-acdm</td>\n",
+              "      <td>12</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Protective-serv</td>\n",
+              "      <td>Not-in-family</td>\n",
+              "      <td>White</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>52</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "    <tr>\n",
+              "      <th>29</th>\n",
+              "      <td>32</td>\n",
+              "      <td>20</td>\n",
+              "      <td>Private</td>\n",
+              "      <td>266015</td>\n",
+              "      <td>Some-college</td>\n",
+              "      <td>10</td>\n",
+              "      <td>Never-married</td>\n",
+              "      <td>Sales</td>\n",
+              "      <td>Own-child</td>\n",
+              "      <td>Black</td>\n",
+              "      <td>Male</td>\n",
+              "      <td>0</td>\n",
+              "      <td>0</td>\n",
+              "      <td>44</td>\n",
+              "      <td>United-States</td>\n",
+              "      <td>&lt;=50K</td>\n",
+              "    </tr>\n",
+              "  </tbody>\n",
+              "</table>\n",
+              "</div>"
+            ],
+            "text/plain": [
+              "    Unnamed: 0  age          workclass  ...  hour.per.week  native.country  income\n",
+              "0            1   39          State-gov  ...             40   United-States   <=50K\n",
+              "1            2   50   Self-emp-not-inc  ...             13   United-States   <=50K\n",
+              "2            3   38            Private  ...             40   United-States   <=50K\n",
+              "3            4   53            Private  ...             40   United-States   <=50K\n",
+              "4            5   28            Private  ...             40            Cuba   <=50K\n",
+              "5            6   37            Private  ...             40   United-States   <=50K\n",
+              "6            7   49            Private  ...             16         Jamaica   <=50K\n",
+              "7            8   52   Self-emp-not-inc  ...             45   United-States    >50K\n",
+              "8            9   31            Private  ...             50   United-States    >50K\n",
+              "9           10   42            Private  ...             40   United-States    >50K\n",
+              "10          11   37            Private  ...             80   United-States    >50K\n",
+              "11          12   30          State-gov  ...             40           India    >50K\n",
+              "12          13   23            Private  ...             30   United-States   <=50K\n",
+              "13          14   32            Private  ...             50   United-States   <=50K\n",
+              "14          16   34            Private  ...             45          Mexico   <=50K\n",
+              "15          17   25   Self-emp-not-inc  ...             35   United-States   <=50K\n",
+              "16          18   32            Private  ...             40   United-States   <=50K\n",
+              "17          19   38            Private  ...             50   United-States   <=50K\n",
+              "18          20   43   Self-emp-not-inc  ...             45   United-States    >50K\n",
+              "19          21   40            Private  ...             60   United-States    >50K\n",
+              "20          22   54            Private  ...             20   United-States   <=50K\n",
+              "21          23   35        Federal-gov  ...             40   United-States   <=50K\n",
+              "22          24   43            Private  ...             40   United-States   <=50K\n",
+              "23          25   59            Private  ...             40   United-States   <=50K\n",
+              "24          26   56          Local-gov  ...             40   United-States    >50K\n",
+              "25          27   19            Private  ...             40   United-States   <=50K\n",
+              "26          29   39            Private  ...             80   United-States   <=50K\n",
+              "27          30   49            Private  ...             40   United-States   <=50K\n",
+              "28          31   23          Local-gov  ...             52   United-States   <=50K\n",
+              "29          32   20            Private  ...             44   United-States   <=50K\n",
+              "\n",
+              "[30 rows x 16 columns]"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 121
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "7_XMhToE42MR",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 34
+        },
+        "outputId": "a8998dbb-dbfe-4e35-872c-b0c3d2a8d8c9"
+      },
+      "source": [
+        "# Removendo os dados inválidos do dataset\n",
+        "df = df[(df.astype(str) != ' ?').all(axis=1)]\n",
+        "len(df)"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "30162"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 122
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "3IqoRdyY459Q",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 403
+        },
+        "outputId": "893ff0b6-8972-44e6-d445-46f2e3666b81"
+      },
+      "source": [
+        "# Mostrando informaçoes sobre a base de dados\n",
+        "df.info()"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "Int64Index: 30162 entries, 0 to 30161\n",
+            "Data columns (total 16 columns):\n",
+            " #   Column          Non-Null Count  Dtype \n",
+            "---  ------          --------------  ----- \n",
+            " 0   Unnamed: 0      30162 non-null  int64 \n",
+            " 1   age             30162 non-null  int64 \n",
+            " 2   workclass       30162 non-null  object\n",
+            " 3   final.weight    30162 non-null  int64 \n",
+            " 4   education       30162 non-null  object\n",
+            " 5   education.num   30162 non-null  int64 \n",
+            " 6   marital.status  30162 non-null  object\n",
+            " 7   occupation      30162 non-null  object\n",
+            " 8   relationship    30162 non-null  object\n",
+            " 9   race            30162 non-null  object\n",
+            " 10  sex             30162 non-null  object\n",
+            " 11  capital.gain    30162 non-null  int64 \n",
+            " 12  capital.loos    30162 non-null  int64 \n",
+            " 13  hour.per.week   30162 non-null  int64 \n",
+            " 14  native.country  30162 non-null  object\n",
+            " 15  income          30162 non-null  object\n",
+            "dtypes: int64(7), object(9)\n",
+            "memory usage: 3.9+ MB\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "-O6XULZrWlaX"
+      },
+      "source": [
+        "# Criando um método para categorizar a idade de acordo com a sua respectiva faixa etária\n",
+        "def age_category(idade):\n",
+        "  if idade <= 19:\n",
+        "    return 0 # Jovem\n",
+        "  elif idade >= 20 and idade <= 59:\n",
+        "    return 1 # Adulto\n",
+        "  else:\n",
+        "    return 2 # Idoso\n",
+        "\n",
+        "# Cria a coluna 'age_category' a partir dos dados da coluna 'age' e aplica o método 'age_category' linha por linha, através da função 'map'\n",
+        "df['age_category'] = df['age'].map(age_category)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "vCtMtxs1XeUB",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 84
+        },
+        "outputId": "920db1b4-93ad-4df4-d375-004a6f0faf8e"
+      },
+      "source": [
+        "# Confirmar que agora as idades foram divididas em 3 categorias\n",
+        "df['age_category'].value_counts() \n",
+        "# Que vai retornar a quantidade de dados de acordo com cada categoria"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "1    26711\n",
+              "2     2082\n",
+              "0     1369\n",
+              "Name: age_category, dtype: int64"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 149
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "H7L7Iyk35ErR"
+      },
+      "source": [
+        "# Criando uma nova coluna, mudando a coluna income para binária para melhor visualização\n",
+        "\n",
+        "df['income_bi'] = df.apply(lambda row: 1 if '>50K'in row['income'] else 0, axis=1)\n",
+        "df['sex_bi'] = df.apply(lambda row: 1 if 'Male'in row['sex'] else 0, axis=1)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "PbSO9Sos6Zov",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 336
+        },
+        "outputId": "8278ecbb-f1d0-4bc3-a8f6-e3ad511328d1"
+      },
+      "source": [
+        "# Removendo algumas colunas que não contribuiram nesse caso\n",
+        "df = df.drop(['income','sex','final.weight','capital.gain','capital.loos','hour.per.week','native.country'], axis=1)\n",
+        "# Mostrar como ficou após o drop\n",
+        "df.info()"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "Int64Index: 30162 entries, 0 to 30161\n",
+            "Data columns (total 12 columns):\n",
+            " #   Column          Non-Null Count  Dtype \n",
+            "---  ------          --------------  ----- \n",
+            " 0   Unnamed: 0      30162 non-null  int64 \n",
+            " 1   age             30162 non-null  int64 \n",
+            " 2   workclass       30162 non-null  object\n",
+            " 3   education       30162 non-null  object\n",
+            " 4   education.num   30162 non-null  int64 \n",
+            " 5   marital.status  30162 non-null  object\n",
+            " 6   occupation      30162 non-null  object\n",
+            " 7   relationship    30162 non-null  object\n",
+            " 8   race            30162 non-null  object\n",
+            " 9   age_category    30162 non-null  int64 \n",
+            " 10  income_bi       30162 non-null  int64 \n",
+            " 11  sex_bi          30162 non-null  int64 \n",
+            "dtypes: int64(6), object(6)\n",
+            "memory usage: 3.0+ MB\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "1w5ChuhDSs-k",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 1000
+        },
+        "outputId": "fffe7ec5-36e2-4de3-bfbd-dc7fa7128963"
+      },
+      "source": [
+        "# Converter os dados para númericos\n",
+        "df = pd.get_dummies(df, columns=['workclass', 'education', 'marital.status', 'occupation', 'relationship', 'race'])\n",
+        "# Agora todos são do tipo númerico\n",
+        "df.info()"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "Int64Index: 30162 entries, 0 to 30161\n",
+            "Data columns (total 61 columns):\n",
+            " #   Column                                 Non-Null Count  Dtype\n",
+            "---  ------                                 --------------  -----\n",
+            " 0   Unnamed: 0                             30162 non-null  int64\n",
+            " 1   age                                    30162 non-null  int64\n",
+            " 2   education.num                          30162 non-null  int64\n",
+            " 3   age_category                           30162 non-null  int64\n",
+            " 4   income_bi                              30162 non-null  int64\n",
+            " 5   sex_bi                                 30162 non-null  int64\n",
+            " 6   workclass_ Federal-gov                 30162 non-null  uint8\n",
+            " 7   workclass_ Local-gov                   30162 non-null  uint8\n",
+            " 8   workclass_ Private                     30162 non-null  uint8\n",
+            " 9   workclass_ Self-emp-inc                30162 non-null  uint8\n",
+            " 10  workclass_ Self-emp-not-inc            30162 non-null  uint8\n",
+            " 11  workclass_ State-gov                   30162 non-null  uint8\n",
+            " 12  workclass_ Without-pay                 30162 non-null  uint8\n",
+            " 13  education_ 10th                        30162 non-null  uint8\n",
+            " 14  education_ 11th                        30162 non-null  uint8\n",
+            " 15  education_ 12th                        30162 non-null  uint8\n",
+            " 16  education_ 1st-4th                     30162 non-null  uint8\n",
+            " 17  education_ 5th-6th                     30162 non-null  uint8\n",
+            " 18  education_ 7th-8th                     30162 non-null  uint8\n",
+            " 19  education_ 9th                         30162 non-null  uint8\n",
+            " 20  education_ Assoc-acdm                  30162 non-null  uint8\n",
+            " 21  education_ Assoc-voc                   30162 non-null  uint8\n",
+            " 22  education_ Bachelors                   30162 non-null  uint8\n",
+            " 23  education_ Doctorate                   30162 non-null  uint8\n",
+            " 24  education_ HS-grad                     30162 non-null  uint8\n",
+            " 25  education_ Masters                     30162 non-null  uint8\n",
+            " 26  education_ Preschool                   30162 non-null  uint8\n",
+            " 27  education_ Prof-school                 30162 non-null  uint8\n",
+            " 28  education_ Some-college                30162 non-null  uint8\n",
+            " 29  marital.status_ Divorced               30162 non-null  uint8\n",
+            " 30  marital.status_ Married-AF-spouse      30162 non-null  uint8\n",
+            " 31  marital.status_ Married-civ-spouse     30162 non-null  uint8\n",
+            " 32  marital.status_ Married-spouse-absent  30162 non-null  uint8\n",
+            " 33  marital.status_ Never-married          30162 non-null  uint8\n",
+            " 34  marital.status_ Separated              30162 non-null  uint8\n",
+            " 35  marital.status_ Widowed                30162 non-null  uint8\n",
+            " 36  occupation_ Adm-clerical               30162 non-null  uint8\n",
+            " 37  occupation_ Armed-Forces               30162 non-null  uint8\n",
+            " 38  occupation_ Craft-repair               30162 non-null  uint8\n",
+            " 39  occupation_ Exec-managerial            30162 non-null  uint8\n",
+            " 40  occupation_ Farming-fishing            30162 non-null  uint8\n",
+            " 41  occupation_ Handlers-cleaners          30162 non-null  uint8\n",
+            " 42  occupation_ Machine-op-inspct          30162 non-null  uint8\n",
+            " 43  occupation_ Other-service              30162 non-null  uint8\n",
+            " 44  occupation_ Priv-house-serv            30162 non-null  uint8\n",
+            " 45  occupation_ Prof-specialty             30162 non-null  uint8\n",
+            " 46  occupation_ Protective-serv            30162 non-null  uint8\n",
+            " 47  occupation_ Sales                      30162 non-null  uint8\n",
+            " 48  occupation_ Tech-support               30162 non-null  uint8\n",
+            " 49  occupation_ Transport-moving           30162 non-null  uint8\n",
+            " 50  relationship_ Husband                  30162 non-null  uint8\n",
+            " 51  relationship_ Not-in-family            30162 non-null  uint8\n",
+            " 52  relationship_ Other-relative           30162 non-null  uint8\n",
+            " 53  relationship_ Own-child                30162 non-null  uint8\n",
+            " 54  relationship_ Unmarried                30162 non-null  uint8\n",
+            " 55  relationship_ Wife                     30162 non-null  uint8\n",
+            " 56  race_ Amer-Indian-Eskimo               30162 non-null  uint8\n",
+            " 57  race_ Asian-Pac-Islander               30162 non-null  uint8\n",
+            " 58  race_ Black                            30162 non-null  uint8\n",
+            " 59  race_ Other                            30162 non-null  uint8\n",
+            " 60  race_ White                            30162 non-null  uint8\n",
+            "dtypes: int64(6), uint8(55)\n",
+            "memory usage: 3.2 MB\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "ujxyCXCk670U"
+      },
+      "source": [
+        "# Dividindo training set e o test set\n",
+        "\n",
+        "# Realizando o embaralhamento das filas\n",
+        "df = df.sample(frac=1)\n",
+        "\n",
+        "# Dividindo os dados de training set e o test set\n",
+        "d_train = df[:25000] # training set\n",
+        "d_test = df[25000:] # test set\n",
+        "\n",
+        "d_train_att = d_train.drop(['age_category'], axis=1)\n",
+        "d_train_age_category = d_train['age_category']\n",
+        "\n",
+        "d_test_att = d_test.drop(['age_category'], axis=1)\n",
+        "d_test_age_category = d_test['age_category']\n",
+        "\n",
+        "d_att = df.drop(['age_category'], axis=1)\n",
+        "d_age_category = df['age_category']"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "5AYMkKx97FdJ"
+      },
+      "source": [
+        "# Classificando a árvore de decisão\n",
+        "t = tree.DecisionTreeClassifier(criterion='entropy', max_depth=7)\n",
+        "t = t.fit(d_train_att, d_train_gt50)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "MQkkMH4m7IyI",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 380
+        },
+        "outputId": "a5cb879c-6307-4eed-e907-1664129321af"
+      },
+      "source": [
+        "# Visualize tree\n",
+        "dot_data = tree.export_graphviz(t, out_file=None, label='all', impurity=False, proportion=True, \n",
+        "                               feature_names=list(d_train_att), class_names=['jovem', 'adulto', 'idoso'],\n",
+        "                               filled=True, rounded=True)\n",
+        "graph = graphviz.Source(dot_data)\n",
+        "graph"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "<graphviz.files.Source at 0x7fa071f22cc0>"
+            ],
+            "image/svg+xml": "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\"\n \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n<!-- Generated by graphviz version 2.40.1 (20161225.0304)\n -->\n<!-- Title: Tree Pages: 1 -->\n<svg width=\"429pt\" height=\"269pt\"\n viewBox=\"0.00 0.00 429.00 269.00\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n<g id=\"graph0\" class=\"graph\" transform=\"scale(1 1) rotate(0) translate(4 265)\">\n<title>Tree</title>\n<polygon fill=\"#ffffff\" stroke=\"transparent\" points=\"-4,4 -4,-265 425,-265 425,4 -4,4\"/>\n<!-- 0 -->\n<g id=\"node1\" class=\"node\">\n<title>0</title>\n<path fill=\"#51e890\" stroke=\"#000000\" d=\"M336.5,-261C336.5,-261 168.5,-261 168.5,-261 162.5,-261 156.5,-255 156.5,-249 156.5,-249 156.5,-205 156.5,-205 156.5,-199 162.5,-193 168.5,-193 168.5,-193 336.5,-193 336.5,-193 342.5,-193 348.5,-199 348.5,-205 348.5,-205 348.5,-249 348.5,-249 348.5,-255 342.5,-261 336.5,-261\"/>\n<text text-anchor=\"middle\" x=\"252.5\" y=\"-245.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">age &lt;= 59.5</text>\n<text text-anchor=\"middle\" x=\"252.5\" y=\"-230.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">samples = 100.0%</text>\n<text text-anchor=\"middle\" x=\"252.5\" y=\"-215.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">value = [0.045, 0.886, 0.07]</text>\n<text text-anchor=\"middle\" x=\"252.5\" y=\"-200.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">class = adulto</text>\n</g>\n<!-- 1 -->\n<g id=\"node2\" class=\"node\">\n<title>1</title>\n<path fill=\"#43e687\" stroke=\"#000000\" d=\"M239.5,-157C239.5,-157 79.5,-157 79.5,-157 73.5,-157 67.5,-151 67.5,-145 67.5,-145 67.5,-101 67.5,-101 67.5,-95 73.5,-89 79.5,-89 79.5,-89 239.5,-89 239.5,-89 245.5,-89 251.5,-95 251.5,-101 251.5,-101 251.5,-145 251.5,-145 251.5,-151 245.5,-157 239.5,-157\"/>\n<text text-anchor=\"middle\" x=\"159.5\" y=\"-141.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">age &lt;= 19.5</text>\n<text text-anchor=\"middle\" x=\"159.5\" y=\"-126.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">samples = 93.0%</text>\n<text text-anchor=\"middle\" x=\"159.5\" y=\"-111.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">value = [0.048, 0.952, 0.0]</text>\n<text text-anchor=\"middle\" x=\"159.5\" y=\"-96.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">class = adulto</text>\n</g>\n<!-- 0&#45;&gt;1 -->\n<g id=\"edge1\" class=\"edge\">\n<title>0&#45;&gt;1</title>\n<path fill=\"none\" stroke=\"#000000\" d=\"M222.0483,-192.9465C214.0194,-183.968 205.263,-174.1758 196.9133,-164.8385\"/>\n<polygon fill=\"#000000\" stroke=\"#000000\" points=\"199.295,-162.2512 190.0201,-157.13 194.077,-166.9174 199.295,-162.2512\"/>\n<text text-anchor=\"middle\" x=\"188.6263\" y=\"-178.3911\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">True</text>\n</g>\n<!-- 4 -->\n<g id=\"node5\" class=\"node\">\n<title>4</title>\n<path fill=\"#8139e5\" stroke=\"#000000\" d=\"M409,-149.5C409,-149.5 282,-149.5 282,-149.5 276,-149.5 270,-143.5 270,-137.5 270,-137.5 270,-108.5 270,-108.5 270,-102.5 276,-96.5 282,-96.5 282,-96.5 409,-96.5 409,-96.5 415,-96.5 421,-102.5 421,-108.5 421,-108.5 421,-137.5 421,-137.5 421,-143.5 415,-149.5 409,-149.5\"/>\n<text text-anchor=\"middle\" x=\"345.5\" y=\"-134.3\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">samples = 7.0%</text>\n<text text-anchor=\"middle\" x=\"345.5\" y=\"-119.3\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">value = [0.0, 0.0, 1.0]</text>\n<text text-anchor=\"middle\" x=\"345.5\" y=\"-104.3\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">class = idoso</text>\n</g>\n<!-- 0&#45;&gt;4 -->\n<g id=\"edge4\" class=\"edge\">\n<title>0&#45;&gt;4</title>\n<path fill=\"none\" stroke=\"#000000\" d=\"M282.9517,-192.9465C293.1955,-181.491 304.6238,-168.711 314.8805,-157.2412\"/>\n<polygon fill=\"#000000\" stroke=\"#000000\" points=\"317.7083,-159.3295 321.7652,-149.5422 312.4903,-154.6634 317.7083,-159.3295\"/>\n<text text-anchor=\"middle\" x=\"323.1589\" y=\"-170.8033\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">False</text>\n</g>\n<!-- 2 -->\n<g id=\"node3\" class=\"node\">\n<title>2</title>\n<path fill=\"#e58139\" stroke=\"#000000\" d=\"M139,-53C139,-53 12,-53 12,-53 6,-53 0,-47 0,-41 0,-41 0,-12 0,-12 0,-6 6,0 12,0 12,0 139,0 139,0 145,0 151,-6 151,-12 151,-12 151,-41 151,-41 151,-47 145,-53 139,-53\"/>\n<text text-anchor=\"middle\" x=\"75.5\" y=\"-37.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">samples = 4.5%</text>\n<text text-anchor=\"middle\" x=\"75.5\" y=\"-22.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">value = [1.0, 0.0, 0.0]</text>\n<text text-anchor=\"middle\" x=\"75.5\" y=\"-7.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">class = jovem</text>\n</g>\n<!-- 1&#45;&gt;2 -->\n<g id=\"edge2\" class=\"edge\">\n<title>1&#45;&gt;2</title>\n<path fill=\"none\" stroke=\"#000000\" d=\"M129.8847,-88.9777C121.9936,-79.9123 113.4619,-70.111 105.5478,-61.0192\"/>\n<polygon fill=\"#000000\" stroke=\"#000000\" points=\"107.9893,-58.4932 98.7836,-53.2485 102.7094,-63.0892 107.9893,-58.4932\"/>\n</g>\n<!-- 3 -->\n<g id=\"node4\" class=\"node\">\n<title>3</title>\n<path fill=\"#39e581\" stroke=\"#000000\" d=\"M308,-53C308,-53 181,-53 181,-53 175,-53 169,-47 169,-41 169,-41 169,-12 169,-12 169,-6 175,0 181,0 181,0 308,0 308,0 314,0 320,-6 320,-12 320,-12 320,-41 320,-41 320,-47 314,-53 308,-53\"/>\n<text text-anchor=\"middle\" x=\"244.5\" y=\"-37.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">samples = 88.6%</text>\n<text text-anchor=\"middle\" x=\"244.5\" y=\"-22.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">value = [0.0, 1.0, 0.0]</text>\n<text text-anchor=\"middle\" x=\"244.5\" y=\"-7.8\" font-family=\"Helvetica,sans-Serif\" font-size=\"14.00\" fill=\"#000000\">class = adulto</text>\n</g>\n<!-- 1&#45;&gt;3 -->\n<g id=\"edge3\" class=\"edge\">\n<title>1&#45;&gt;3</title>\n<path fill=\"none\" stroke=\"#000000\" d=\"M189.4678,-88.9777C197.4529,-79.9123 206.0862,-70.111 214.0944,-61.0192\"/>\n<polygon fill=\"#000000\" stroke=\"#000000\" points=\"216.9558,-63.066 220.9392,-53.2485 211.7029,-58.4391 216.9558,-63.066\"/>\n</g>\n</g>\n</svg>\n"
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 166
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "3d8y0u9k0IvN"
+      },
+      "source": [
+        "\n",
+        "Cada divisão do espaço é representada por um nó na árvore de decisão. A primeira divisão (nós raiz da árvore) leva em consideração todos os exemplos (pontos) do espaço ao encontrar o ponto de corte que maximiza a pureza, de acordo com algum critério de impureza, das sub-regiões resultantes. \n",
+        "\n",
+        "Vamos supor que a idade menor ou igual que 59 anos é o ponto de corte que melhor divide o espaço. Portanto, essa será o nó raiz de nossa árvore de decisão.\n",
+        "\n",
+        "Agora, vamos recursivamente particionar as duas sub-regiões do espaço (da esquerda e da direita). Na direita, temos uma região completamente pura e isso significa que qualquer corte que fizermos nessa região teremos como resultados regiões puras. \n",
+        "\n",
+        "Portanto, podemos parar o particionamento, ou seja, essa região será considerada um nó folha em nossa árvore. Já a região da esquerda não é pura, assim devemos continuar o particionamento por ela até que cheguemos em sub-regiões puras.\n",
+        "\n",
+        "A partição na sub-região da esquerda, foi feita no eixo da idade menor ou igual a 19 anos. Como pode-se notar, foram gerados mais duas novas sub-regiões disjuntas, que, por sua vez, estão completamente puras. \n",
+        "\n",
+        "Esse processo é repetido recursivamente até que um critério de parada seja alcançado (i.e., profundidade, número de folhas) ou que todas as folhas sejam puras, que implica na costrução até sua profundidade máxima .\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "1xMQoRGV8voB",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 34
+        },
+        "outputId": "05d1151f-4394-46ad-9bc8-a5054ea205ae"
+      },
+      "source": [
+        "# Calculando a acurácia (accuracy)\n",
+        "t.score(d_test_att, d_test_age_category)"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "1.0"
+            ]
+          },
+          "metadata": {
+            "tags": []
+          },
+          "execution_count": 170
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "xmhoTMFE0Ose"
+      },
+      "source": [
+        "Neste caso, foi calculado a acurácia, proporção de casos que foram corretamente previstos, sejam eles verdadeiro positivo ou verdadeiro negativo.\n",
+        "\n",
+        "O resultado do modelo mostra um resultado de 1, o que é um bom resultado"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "cVqFEe578y0Z",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 34
+        },
+        "outputId": "76c28dac-34e0-41b5-c0c8-456094b11204"
+      },
+      "source": [
+        "# Podemos ir mais longe, avaliando uma pontuação por validação cruzada (cross-validation)\n",
+        "scores = cross_val_score(t, d_att, d_age_category, cv=5)\n",
+        "# Mostra a pontuação média e +/- dois desvios padrão de distância (cobrindo 95% ou pontuação)\n",
+        "print('Accuracy: %0.2f (+/- %0.2f)' % (scores.mean(), scores.std()*2))\n",
+        "# Com uma precisão de 1 (+/- 0.00)"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Accuracy: 1.00 (+/- 0.00)\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "3JmWHQJw0Nu0"
+      },
+      "source": [
+        "Utilizamos o Cross-Validation — ou Validação Cruzada — que é uma técnica que visa entender como seu modelo generaliza, ou seja, como ele se comporta quando vai prever um dado que nunca viu. Com o objetivo de criar diferentes conjuntos de treino e teste, treinar o modelo e ter certeza de que ele está performando bem. Nesse caso, ao invés de usarmos apenas um conjunto de teste para validar nosso modelo, utilizaremos N outros a partir dos mesmos dados.\n",
+        "\n",
+        "Neste caso, o dataset foi dividido em 5 partes, para cada uma dessas partes, o modelo irá usar 4 partes (K-1) para treinar, enquanto usará 1 parte para validar. \n",
+        "\n",
+        "Ao final do processo, quando o modelo iterar/treinar 5 vezes, será obtido um verdadeiro score de como seu modelo está generalizando, neste caso, ao tirar a média e desvio padrão de todos os treinos realizados.\n",
+        "\n",
+        "Esse processo faz com que o treino de seu modelo demore um pouco mais, mas é crucial se você quer ter certeza de que seus dados estão generalizando bem."
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "WrXFzELq88yD"
+      },
+      "source": [
+        "# Preparando um modelo de previsão, guardando a primeira fila da moldura de dados depois de a termos modificado.\n",
+        "df.iloc[[0]].to_csv('prediction.csv', sep=',', encoding='utf-8', index=False)"
+      ],
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "uZs8XA-90Tx3"
+      },
+      "source": [
+        ""
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "XBaLTLE_FW_N",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 1000
+        },
+        "outputId": "b81be6b1-d505-48ef-b854-ca70033fe631"
+      },
+      "source": [
+        "df.info()"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "<class 'pandas.core.frame.DataFrame'>\n",
+            "Int64Index: 30162 entries, 221 to 6937\n",
+            "Data columns (total 61 columns):\n",
+            " #   Column                                 Non-Null Count  Dtype\n",
+            "---  ------                                 --------------  -----\n",
+            " 0   Unnamed: 0                             30162 non-null  int64\n",
+            " 1   age                                    30162 non-null  int64\n",
+            " 2   education.num                          30162 non-null  int64\n",
+            " 3   age_category                           30162 non-null  int64\n",
+            " 4   income_bi                              30162 non-null  int64\n",
+            " 5   sex_bi                                 30162 non-null  int64\n",
+            " 6   workclass_ Federal-gov                 30162 non-null  uint8\n",
+            " 7   workclass_ Local-gov                   30162 non-null  uint8\n",
+            " 8   workclass_ Private                     30162 non-null  uint8\n",
+            " 9   workclass_ Self-emp-inc                30162 non-null  uint8\n",
+            " 10  workclass_ Self-emp-not-inc            30162 non-null  uint8\n",
+            " 11  workclass_ State-gov                   30162 non-null  uint8\n",
+            " 12  workclass_ Without-pay                 30162 non-null  uint8\n",
+            " 13  education_ 10th                        30162 non-null  uint8\n",
+            " 14  education_ 11th                        30162 non-null  uint8\n",
+            " 15  education_ 12th                        30162 non-null  uint8\n",
+            " 16  education_ 1st-4th                     30162 non-null  uint8\n",
+            " 17  education_ 5th-6th                     30162 non-null  uint8\n",
+            " 18  education_ 7th-8th                     30162 non-null  uint8\n",
+            " 19  education_ 9th                         30162 non-null  uint8\n",
+            " 20  education_ Assoc-acdm                  30162 non-null  uint8\n",
+            " 21  education_ Assoc-voc                   30162 non-null  uint8\n",
+            " 22  education_ Bachelors                   30162 non-null  uint8\n",
+            " 23  education_ Doctorate                   30162 non-null  uint8\n",
+            " 24  education_ HS-grad                     30162 non-null  uint8\n",
+            " 25  education_ Masters                     30162 non-null  uint8\n",
+            " 26  education_ Preschool                   30162 non-null  uint8\n",
+            " 27  education_ Prof-school                 30162 non-null  uint8\n",
+            " 28  education_ Some-college                30162 non-null  uint8\n",
+            " 29  marital.status_ Divorced               30162 non-null  uint8\n",
+            " 30  marital.status_ Married-AF-spouse      30162 non-null  uint8\n",
+            " 31  marital.status_ Married-civ-spouse     30162 non-null  uint8\n",
+            " 32  marital.status_ Married-spouse-absent  30162 non-null  uint8\n",
+            " 33  marital.status_ Never-married          30162 non-null  uint8\n",
+            " 34  marital.status_ Separated              30162 non-null  uint8\n",
+            " 35  marital.status_ Widowed                30162 non-null  uint8\n",
+            " 36  occupation_ Adm-clerical               30162 non-null  uint8\n",
+            " 37  occupation_ Armed-Forces               30162 non-null  uint8\n",
+            " 38  occupation_ Craft-repair               30162 non-null  uint8\n",
+            " 39  occupation_ Exec-managerial            30162 non-null  uint8\n",
+            " 40  occupation_ Farming-fishing            30162 non-null  uint8\n",
+            " 41  occupation_ Handlers-cleaners          30162 non-null  uint8\n",
+            " 42  occupation_ Machine-op-inspct          30162 non-null  uint8\n",
+            " 43  occupation_ Other-service              30162 non-null  uint8\n",
+            " 44  occupation_ Priv-house-serv            30162 non-null  uint8\n",
+            " 45  occupation_ Prof-specialty             30162 non-null  uint8\n",
+            " 46  occupation_ Protective-serv            30162 non-null  uint8\n",
+            " 47  occupation_ Sales                      30162 non-null  uint8\n",
+            " 48  occupation_ Tech-support               30162 non-null  uint8\n",
+            " 49  occupation_ Transport-moving           30162 non-null  uint8\n",
+            " 50  relationship_ Husband                  30162 non-null  uint8\n",
+            " 51  relationship_ Not-in-family            30162 non-null  uint8\n",
+            " 52  relationship_ Other-relative           30162 non-null  uint8\n",
+            " 53  relationship_ Own-child                30162 non-null  uint8\n",
+            " 54  relationship_ Unmarried                30162 non-null  uint8\n",
+            " 55  relationship_ Wife                     30162 non-null  uint8\n",
+            " 56  race_ Amer-Indian-Eskimo               30162 non-null  uint8\n",
+            " 57  race_ Asian-Pac-Islander               30162 non-null  uint8\n",
+            " 58  race_ Black                            30162 non-null  uint8\n",
+            " 59  race_ Other                            30162 non-null  uint8\n",
+            " 60  race_ White                            30162 non-null  uint8\n",
+            "dtypes: int64(6), uint8(55)\n",
+            "memory usage: 3.2 MB\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "fuohyKMP9CEA",
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 336
+        },
+        "outputId": "dbf0df20-0cca-47a9-d5b7-f3d40fb1e2df"
+      },
+      "source": [
+        "# O método certo é testar poucas profundidades a fim de encontrar a profundidade máxima certa para o modelo\n",
+        "for max_depth in range(1, 20):\n",
+        "    t = tree.DecisionTreeClassifier(criterion='entropy', max_depth=max_depth)\n",
+        "    scores = cross_val_score(t, d_att, d_age_category, cv=5)\n",
+        "    print(\"Max depth: %d, Accuracy: %0.2f (+/- %0.2f)\" % (max_depth, scores.mean(), scores.std()*2))"
+      ],
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "text": [
+            "Max depth: 1, Accuracy: 0.95 (+/- 0.00)\n",
+            "Max depth: 2, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 3, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 4, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 5, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 6, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 7, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 8, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 9, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 10, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 11, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 12, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 13, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 14, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 15, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 16, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 17, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 18, Accuracy: 1.00 (+/- 0.00)\n",
+            "Max depth: 19, Accuracy: 1.00 (+/- 0.00)\n"
+          ],
+          "name": "stdout"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "OU1U0eBz0VkE"
+      },
+      "source": [
+        "Neste caso, foi utilizado um método para testar a profundidade máxima da árvore. Os nós foram expandidos até todas as folhas serem puras, ou até todas as folhas conterem o valor mínimo de amostras necessárias para dividir um nó."
+      ]
+    }
+  ]
+}
